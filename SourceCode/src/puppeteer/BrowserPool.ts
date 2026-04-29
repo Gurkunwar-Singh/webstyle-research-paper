@@ -109,19 +109,11 @@ class BrowserPool {
 
 // src/utils/browserPool.ts
 // src/utils/browserPool.ts
+// src/utils/browserPool.ts - Simplified initialize method
 async initialize(): Promise<void> {
   if (this.isInitialized) return;
 
   logger.info(`Initializing browser pool with ${this.maxPoolSize} instances`);
-  
-  // Use system Chromium on Render (pre-installed)
-  const executablePath = process.env.NODE_ENV === 'production' 
-    ? '/usr/bin/chromium'  // Render's pre-installed Chromium
-    : undefined;
-  
-  if (executablePath) {
-    logger.info(`Using system Chromium at: ${executablePath}`);
-  }
   
   for (let i = 0; i < this.maxPoolSize; i++) {
     let launchArgs: string[] = [
@@ -134,16 +126,13 @@ async initialize(): Promise<void> {
     ];
 
     try {
-      const launchOptions: any = {
+      // Let Puppeteer find or download Chrome automatically
+      const browser = await puppeteer.launch({
         headless: true,
         args: launchArgs,
-      };
-      
-      if (executablePath) {
-        launchOptions.executablePath = executablePath;
-      }
-      
-      const browser = await puppeteer.launch(launchOptions);
+        // NO executablePath - let Puppeteer handle it
+      });
+
       this.pool.push({ browser, linkedPort: undefined });
       logger.info(`Browser instance ${i + 1}/${this.maxPoolSize} initialized`);
     } catch (error) {
