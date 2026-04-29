@@ -1,4 +1,4 @@
-// utils/browserPool.ts - Updated
+// src/utils/browserPool.ts
 import dotenv from 'dotenv';
 import puppeteer, { Browser } from 'puppeteer';
 import { BrowserPoolItem } from '../type';
@@ -37,21 +37,10 @@ class BrowserPool {
         '--disable-features=IsolateOrigins,site-per-process',
         '--window-size=1920,1080',
         '--disable-accelerated-2d-canvas',
-        '--disable-background-timer-throttling',
-        '--disable-breakpad',
-        '--disable-component-extensions-with-background-pages',
-        '--disable-extensions',
-        '--disable-features=TranslateUI,BlinkGenPropertyTrees',
-        '--disable-ipc-flooding-protection',
-        '--disable-renderer-backgrounding',
-        '--enable-features=NetworkService,NetworkServiceInProcess',
-        '--force-color-profile=srgb',
-        '--hide-scrollbars',
-        '--metrics-recording-only',
-        '--mute-audio',
-        '--ignore-certificate-errors',  // This handles HTTPS errors instead of ignoreHTTPSErrors
-        '--ignore-certificate-errors-spki-list',
-        '--allow-insecure-localhost'
+        '--no-first-run',
+        '--no-zygote',
+        '--single-process',
+        '--disable-extensions'
       ];
 
       let linkedPort: number | undefined;
@@ -68,12 +57,39 @@ class BrowserPool {
       }
 
       try {
-        const browser: Browser = await puppeteer.launch({
-          headless: true,
-          args: launchArgs,
-          // Remove ignoreHTTPSErrors - not supported in this version
-          // Use '--ignore-certificate-errors' in args instead
-        });
+        // Try multiple possible Chrome paths on Render
+        const chromePaths = [
+          '/usr/bin/google-chrome',
+          '/usr/bin/chromium',
+          '/usr/bin/chromium-browser',
+          process.env.PUPPETEER_EXECUTABLE_PATH
+        ].filter(Boolean);
+
+        let browser: Browser | null = null;
+        
+        // Try each Chrome path
+        for (const chromePath of chromePaths) {
+          try {
+            browser = await puppeteer.launch({
+              headless: true,
+              executablePath: chromePath as string,
+              args: launchArgs,
+            });
+            logger.info(`Successfully launched Chrome at: ${chromePath}`);
+            break;
+          } catch (err) {
+            logger.warn(`Failed to launch Chrome at ${chromePath}:`, err);
+          }
+        }
+
+        // If no Chrome found, let puppeteer download its own
+        if (!browser) {
+          logger.info('Falling back to puppeteer-managed Chrome');
+          browser = await puppeteer.launch({
+            headless: true,
+            args: launchArgs,
+          });
+        }
 
         this.pool.push({
           browser,
