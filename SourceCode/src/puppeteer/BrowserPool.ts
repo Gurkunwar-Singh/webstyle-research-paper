@@ -107,13 +107,14 @@ class BrowserPool {
 
 
 
+// src/utils/browserPool.ts
 async initialize(): Promise<void> {
   if (this.isInitialized) return;
 
-  console.log(`Initializing browser pool with ${this.maxPoolSize} instances`);
+  logger.info(`Initializing browser pool with ${this.maxPoolSize} instances`);
   
-  const chromePath = getChromePath();
-  console.log(`Using Chrome path: ${chromePath || 'default'}`);
+  
+  const chromePath = '/opt/render/.cache/puppeteer/chrome/linux-147.0.7727.57/chrome-linux64/chrome';
   
   for (let i = 0; i < this.maxPoolSize; i++) {
     let launchArgs: string[] = [
@@ -126,21 +127,16 @@ async initialize(): Promise<void> {
     ];
 
     try {
-      const launchOptions: any = {
+      const browser = await puppeteer.launch({
         headless: true,
         args: launchArgs,
-      };
-      
-      // Only set executablePath if we found one
-      if (chromePath) {
-        launchOptions.executablePath = chromePath;
-      }
-      
-      const browser = await puppeteer.launch(launchOptions);
+        executablePath: chromePath,  
+      });
+
       this.pool.push({ browser, linkedPort: undefined });
-      console.log(`✅ Browser instance ${i + 1}/${this.maxPoolSize} initialized`);
+      logger.info(`Browser instance ${i + 1}/${this.maxPoolSize} initialized`);
     } catch (error) {
-      console.error(`❌ Failed to launch browser:`, error);
+      logger.error(`Failed to launch browser:`, error);
       throw error;
     }
   }

@@ -10,7 +10,7 @@
     "lint": "eslint \"src/**/*.{js,ts}\"",
     "lint:fix": "eslint \"src/**/*.{js,ts}\" --fix",
     "format": "prettier --write \"src/**/*.{js,ts,json}\"",
-    "postinstall": "npm run build && npx puppeteer browsers install chrome && cp -r $(npx puppeteer browsers install chrome --path) ./.local-chrome",
+     "postinstall": "npm run build || true",
     "clean": "rm -rf dist",
     "rebuild": "npm run clean && npm run build"
   },
