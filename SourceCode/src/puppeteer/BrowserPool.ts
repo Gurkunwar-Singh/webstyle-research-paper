@@ -1,6 +1,6 @@
 // src/utils/browserPool.ts
 import dotenv from 'dotenv';
-import puppeteer, { Browser } from 'puppeteer';
+import puppeteer, { Browser,executablePath  } from 'puppeteer';
 import { BrowserPoolItem } from '../type';
 import logger from '../utils/logger';
 
@@ -114,35 +114,31 @@ class BrowserPool {
 async initialize(): Promise<void> {
   if (this.isInitialized) return;
 
+  const chromePath = executablePath();
+  logger.info(`Resolved Chrome path: ${chromePath}`);
+ const fs = require('fs');
+  if (!fs.existsSync(chromePath)) {
+    throw new Error(`Chrome not found at: ${chromePath}. Run: npx puppeteer browsers install chrome`);
+  };
   logger.info(`Initializing browser pool with ${this.maxPoolSize} instances`);
-  
-  // Set the correct path for Chrome downloaded during build
-  const chromePath = process.env.NODE_ENV === 'production'
-    ? '/opt/render/.cache/puppeteer/chrome/linux-147.0.7727.57/chrome-linux64/chrome'
-    : undefined;
-  
-  for (let i = 0; i < this.maxPoolSize; i++) {
-    let launchArgs: string[] = [
-      '--no-sandbox',
-      '--disable-setuid-sandbox',
-      '--disable-dev-shm-usage',
-      '--disable-gpu',
-      '--no-first-run',
-      '--no-zygote'
-    ];
 
+  const launchArgs: string[] = [
+    '--no-sandbox',
+    '--disable-setuid-sandbox',
+    '--disable-dev-shm-usage',
+    '--disable-gpu',
+    '--no-first-run',
+    '--no-zygote',
+  ];
+
+  for (let i = 0; i < this.maxPoolSize; i++) {
     try {
-      const launchOptions: any = {
+      const browser = await puppeteer.launch({
         headless: true,
+        executablePath: chromePath,
         args: launchArgs,
-      };
-      
-      if (chromePath) {
-        launchOptions.executablePath = chromePath;
-        logger.info(`Using Chrome at: ${chromePath}`);
-      }
-      
-      const browser = await puppeteer.launch(launchOptions);
+      });
+
       this.pool.push({ browser, linkedPort: undefined });
       logger.info(`Browser instance ${i + 1}/${this.maxPoolSize} initialized`);
     } catch (error) {
