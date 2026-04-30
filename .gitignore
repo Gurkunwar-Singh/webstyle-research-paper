@@ -31,3 +31,4 @@ backend/*.log
 # UI specific
 ui/dist/
 EOF
+.cache/
