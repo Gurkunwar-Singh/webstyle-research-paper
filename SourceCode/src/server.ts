@@ -3,6 +3,7 @@ import express from 'express';
 import routes from './routes/route';
 import logger from './utils/logger';
 import cors from 'cors';
+import { browserPool } from './puppeteer/BrowserPool';
 const app = express();
 const allowedOrigins = [
   'http://localhost:3001',
@@ -41,9 +42,23 @@ app.use('*', (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  logger.info(`Theme Extraction API Server listening on port ${PORT}`);
-   logger.info(`Health check: http://localhost:${PORT}/health`);
-});
+
+async function startServer() {
+  try {
+    logger.info('Initializing browser pool...');
+    await browserPool.initialize();
+    logger.info('Browser pool ready');
+
+    app.listen(PORT, () => {
+      logger.info(`Theme Extraction API Server listening on port ${PORT}`);
+      logger.info(`Health check: http://localhost:${PORT}/health`);
+    });
+  } catch (err) {
+    logger.error('Failed to initialize browser pool on startup:', err);
+    process.exit(1);
+  }
+}
+
+startServer();
 
 export default app;

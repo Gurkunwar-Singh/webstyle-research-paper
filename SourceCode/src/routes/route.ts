@@ -35,7 +35,7 @@ router.post('/extract-theme', async (req: Request, res: Response) => {
     // Get browser from pool with timeout
     browserPoolItem = await withTimeout(
       browserPool.getBrowser(),
-      5000,
+      30000,
       'Browser acquisition timed out'
     );
 
